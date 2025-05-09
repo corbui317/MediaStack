@@ -1,5 +1,5 @@
 services:
-  plex:  # 📺 Plex Media Server - Streams your local media (movies, TV shows, music)
+  plex:  # Plex Media Server – organizes and streams your media (movies, shows, music) to devices
     container_name: plex
     image: plexinc/pms-docker:latest
     devices:
@@ -16,7 +16,7 @@ services:
       - /opt/plex:/config
       - /opt/scripts:/scripts
 
-  prowlarr:  # 🧠 Prowlarr - Centralized indexer manager for Sonarr/Radarr
+  prowlarr:  # Indexer manager for Sonarr/Radarr – centralizes indexer setup for easier automation
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
@@ -29,8 +29,8 @@ services:
     ports:
       - 9696:9696
     restart: unless-stopped
-
-  requestrr:  # 💬 Requestrr - Discord bot for requesting movies and shows
+      
+  requestrr:  # Discord bot to request media via Radarr/Sonarr from users in a chat interface
     image: thomst08/requestrr:latest
     container_name: requestrr
     environment:
@@ -42,8 +42,8 @@ services:
     ports:
       - 4545:4545
     restart: unless-stopped
-
-  radarr:  # 🎬 Radarr - Automates movie downloads and management
+      
+  radarr:  # Manages HD movie downloads via automated search and download
     container_name: radarr
     environment:
       - PUID=1000
@@ -55,4 +55,177 @@ services:
     restart: unless-stopped
     volumes:
       - /mnt:/mnt
-      - /opt/radarr:/co
+      - /opt/radarr:/config
+      - /opt/scripts:/scripts
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+
+  radarr4k:  # Separate instance of Radarr for handling 4K movie downloads
+    container_name: radarr4k
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 7879:7878
+    hostname: radarr4k
+    image: ghcr.io/binhex/arch-radarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/radarr4k:/config
+      - /opt/scripts:/scripts
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+      
+  radarranime:  # Radarr instance dedicated to anime movies
+    container_name: radarranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 7880:7878
+    hostname: radarranime
+    image: ghcr.io/binhex/arch-radarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/radarranime:/config
+      - /opt/scripts:/scripts
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+
+  sonarr:  # Manages HD TV shows – automatic downloads, renaming, sorting
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 8989:8989
+    hostname: sonarr
+    image: ghcr.io/binhex/arch-sonarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/scripts:/scripts
+      - /opt/sonarr:/config
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+
+  sonarr4k:  # Sonarr instance for 4K TV show management
+    container_name: sonarr4k
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 8990:8989
+    hostname: sonarr4k
+    image: ghcr.io/binhex/arch-sonarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/scripts:/scripts
+      - /opt/sonarr4k:/config
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+      
+  sonarranime:  # Sonarr instance specialized for anime TV series
+    container_name: sonarranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 8991:8989
+    hostname: sonarranime
+    image: ghcr.io/binhex/arch-sonarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/scripts:/scripts
+      - /opt/sonarranime:/config
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+
+  bazarr:  # Subtitle downloader that integrates with Radarr/Sonarr for HD content
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/bazaar:/config
+      - /mnt:/mnt
+    ports:
+      - 6767:6767
+    hostname: bazaar
+    restart: unless-stopped
+
+  bazarr4k:  # Bazarr instance for managing 4K subtitles
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarr4k
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/bazaar4k:/config
+      - /mnt:/mnt
+    ports:
+      - 6768:6767
+    hostname: bazaar4k
+    restart: unless-stopped
+
+  bazarranime:  # Bazarr instance for managing subtitles for anime content
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/bazaaranime:/config
+      - /mnt:/mnt
+    ports:
+      - 6769:6767
+    hostname: bazaaranime
+    restart: unless-stopped
+
+  tautulli:  # Plex usage stats and monitoring dashboard
+    image: ghcr.io/tautulli/tautulli
+    container_name: tautulli
+    restart: unless-stopped
+    volumes:
+      - /opt/tautulli:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - 8181:8181
+    hostname: tautulli
+
+  overseerr:  # Web interface for requesting new media from Radarr/Sonarr (main content)
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/overseerr:/config
+    ports:
+      - 5055:5055
+    restart: unless-stopped
+
+  overseerranime:  # Separate Overseerr instance for anime content requests
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/overseerranime:/config
+    ports:
+      - 5056:5055
+    restart: unless-stopped
