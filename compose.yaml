@@ -229,3 +229,53 @@ services:
     ports:
       - 5056:5055
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"    
+    
+  prowlarr:  # Indexer manager for torrent and usenet indexers, integrates with Sonarr/Radarr
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/Prowlarr-Indexers/config:/config
+      - /opt/Prowlarr-Indexers/Custom:/config/Definitions/Custom
+    ports:
+      - 9696:9696  # Web UI port for managing indexers
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"  # Enables automatic updates by Watchtower    
+
+  requestrr:  # Chat bot (Discord) for users to request movies/TV shows that integrates with Radarr/Sonarr
+    image: thomst08/requestrr:latest
+    container_name: requestrr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/requestrr:/config
+    ports:
+      - 4545:4545  
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"  
+
+  maintainerr:  # Dashboard to monitor and manage your media services' health/status
+    image: ghcr.io/jorenn92/maintainerr:latest
+    container_name: maintainerr
+    user: 1000:1000
+    volumes:
+      - ./data:/app/data
+      - /opt/maintainerr:/config
+    environment:
+      - TZ=Europe/Brussels
+#     - DEBUG=true # Uncomment to enable debug logs for troubleshooting
+    ports:
+      - 6246:6246  
+    restart: unless-stopped  
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"     
+
