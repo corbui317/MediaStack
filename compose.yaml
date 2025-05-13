@@ -1,5 +1,5 @@
 services:
-  plex:
+  plex:  # Plex Media Server – organizes and streams your media (movies, shows, music) to devices
     container_name: plex
     image: plexinc/pms-docker:latest
     devices:
@@ -16,7 +16,7 @@ services:
       - /opt/plex:/config
       - /opt/scripts:/scripts
 
-  prowlarr:
+  prowlarr:  # Indexer manager for Sonarr/Radarr – centralizes indexer setup for easier automation
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     environment:
@@ -30,7 +30,7 @@ services:
       - 9696:9696
     restart: unless-stopped
       
-  requestrr:
+  requestrr:  # Discord bot to request media via Radarr/Sonarr from users in a chat interface
     image: thomst08/requestrr:latest
     container_name: requestrr
     environment:
@@ -43,7 +43,7 @@ services:
       - 4545:4545
     restart: unless-stopped
       
-  radarr:
+  radarr:  # Manages HD movie downloads via automated search and download
     container_name: radarr
     environment:
       - PUID=1000
@@ -60,7 +60,41 @@ services:
       - /usr/bin/rclone:/usr/bin/rclone
       - /mnt/symlinks:/mnt/symlinks
 
-  sonarr:
+  radarr4k:  # Separate instance of Radarr for handling 4K movie downloads
+    container_name: radarr4k
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 7879:7878
+    hostname: radarr4k
+    image: ghcr.io/binhex/arch-radarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/radarr4k:/config
+      - /opt/scripts:/scripts
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+      
+  radarranime:  # Radarr instance dedicated to anime movies
+    container_name: radarranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 7880:7878
+    hostname: radarranime
+    image: ghcr.io/binhex/arch-radarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/radarranime:/config
+      - /opt/scripts:/scripts
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+
+  sonarr:  # Manages HD TV shows – automatic downloads, renaming, sorting
     container_name: sonarr
     environment:
       - PUID=1000
@@ -76,3 +110,238 @@ services:
       - /opt/sonarr:/config
       - /usr/bin/rclone:/usr/bin/rclone
       - /mnt/symlinks:/mnt/symlinks
+
+  sonarr4k:  # Sonarr instance for 4K TV show management
+    container_name: sonarr4k
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 8990:8989
+    hostname: sonarr4k
+    image: ghcr.io/binhex/arch-sonarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/scripts:/scripts
+      - /opt/sonarr4k:/config
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+      
+  sonarranime:  # Sonarr instance specialized for anime TV series
+    container_name: sonarranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+    ports:
+      - 8991:8989
+    hostname: sonarranime
+    image: ghcr.io/binhex/arch-sonarr:latest
+    restart: unless-stopped
+    volumes:
+      - /mnt:/mnt
+      - /opt/scripts:/scripts
+      - /opt/sonarranime:/config
+      - /usr/bin/rclone:/usr/bin/rclone
+      - /mnt/symlinks:/mnt/symlinks
+
+  bazarr:  # Subtitle downloader that integrates with Radarr/Sonarr for HD content
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/bazaar:/config
+      - /mnt:/mnt
+    ports:
+      - 6767:6767
+    hostname: bazaar
+    restart: unless-stopped
+
+  bazarr4k:  # Bazarr instance for managing 4K subtitles
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarr4k
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/bazaar4k:/config
+      - /mnt:/mnt
+    ports:
+      - 6768:6767
+    hostname: bazaar4k
+    restart: unless-stopped
+
+  bazarranime:  # Bazarr instance for managing subtitles for anime content
+    image: ghcr.io/hotio/bazarr
+    container_name: bazarranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/bazaaranime:/config
+      - /mnt:/mnt
+    ports:
+      - 6769:6767
+    hostname: bazaaranime
+    restart: unless-stopped
+
+  tautulli:  # Plex usage stats and monitoring dashboard
+    image: ghcr.io/tautulli/tautulli
+    container_name: tautulli
+    restart: unless-stopped
+    volumes:
+      - /opt/tautulli:/config
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - 8181:8181
+    hostname: tautulli
+
+  overseerr:  # Web interface for requesting new media from Radarr/Sonarr (main content)
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/overseerr:/config
+    ports:
+      - 5055:5055
+    restart: unless-stopped
+
+  overseerranime:  # Separate Overseerr instance for anime content requests
+    image: lscr.io/linuxserver/overseerr:latest
+    container_name: overseerranime
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/overseerranime:/config
+    ports:
+      - 5056:5055
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"    
+    
+  prowlarr:  # Indexer manager for torrent and usenet indexers, integrates with Sonarr/Radarr
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/Prowlarr-Indexers/config:/config
+      - /opt/Prowlarr-Indexers/Custom:/config/Definitions/Custom
+    ports:
+      - 9696:9696  # Web UI port for managing indexers
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"  # Enables automatic updates by Watchtower    
+
+  requestrr:  # Chat bot (Discord) for users to request movies/TV shows that integrates with Radarr/Sonarr
+    image: thomst08/requestrr:latest
+    container_name: requestrr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - /opt/requestrr:/config
+    ports:
+      - 4545:4545  
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"  
+
+  maintainerr:  # Dashboard to monitor and manage your media services' health/status
+    image: ghcr.io/jorenn92/maintainerr:latest
+    container_name: maintainerr
+    user: 1000:1000
+    volumes:
+      - ./data:/app/data
+      - /opt/maintainerr:/config
+    environment:
+      - TZ=Europe/Brussels
+#     - DEBUG=true # Uncomment to enable debug logs for troubleshooting
+    ports:
+      - 6246:6246  
+    restart: unless-stopped  
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"     
+
+  kometa:  # Kometa – automation tool to manage and build Plex/Emby collections
+    image: kometateam/kometa
+    container_name: kometa
+    environment:
+      - TZ=Etc/UTC  # Timezone for scheduling
+      - KOMETA_TIME=03:00  # Time Kometa should run (daily)
+      - KOMETA_RUN=False  # Set to True if you want it to auto-run
+      - KOMETA_TEST=False  # Run in test mode (no changes applied)
+      - KOMETA_NO_MISSING=False  # Include missing items in collections
+    volumes:
+      - /opt/kometa:/config  # Kometa config and metadata
+    restart: unless-stopped
+
+  tailscale-nginx:  # Tailscale container to allow secure remote access using WireGuard
+    image: tailscale/tailscale:latest
+    hostname: tailscale-nginx
+    container_name: tailscale-nginx
+    environment:
+     - TS_AUTHKEY=<key>  # Tailscale auth key for device login
+     - TS_EXTRA_ARGS=--accept-routes  # Accept routes from other nodes
+     - TS_STATE_DIR=/var/lib/tailscale  # Persistent state
+     - TS_ROUTES=192.168.126.0/24  # Subnet routes to advertise
+     - TS_USERSPACE=false  # Use kernel networking (preferred for Docker)
+    volumes:
+     - /opt/tailscale-nginx/state:/var/lib/tailscale  # Persistent state volume
+     - /dev/net/tun:/dev/net/tun  # TUN device for WireGuard
+    cap_add:
+     - net_admin  # Required for routing and network setup
+     - sys_module  # Required for TUN support
+    restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  nginx:  # Nginx running in the same network namespace as Tailscale for internal reverse proxying
+    image: nginx
+    container_name: nginx
+    depends_on:
+     - tailscale-nginx
+    network_mode: service:tailscale-nginx  # Share network namespace with tailscale container
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  cloudflared:  # Cloudflare Tunnel to securely expose local services to the web without port forwarding
+    image: cloudflare/cloudflared
+    container_name: cloudflare-tunnel
+    restart: unless-stopped
+    command: tunnel run  # Runs the tunnel in "run" mode with the token
+    environment:
+      - TUNNEL_TOKEN=<token>  # Token from Cloudflare dashboard
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  filebrowser:  # Filebrowser provides a web interface to browse and manage files
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    volumes:
+      - /:/srv  # Root directory (change to restrict access)
+      - /opt/filebrowser/filebrowser.db:/database/filebrowser.db  # DB path
+      - /opt/filebrowser/settings.json:/config/settings.json  # UI/config settings
+    environment:
+      - PUID=$(id -u)  # User ID for file permissions
+      - PGID=$(id -g)  # Group ID for file permissions
+    ports:
+      - 8095:80  # Filebrowser web UI port
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
